@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -41,21 +42,27 @@ func doChannel(
 
 	playlistId, err := getPlaylistId(channel.Id)
 	if err != nil {
-		log.Printf("[%s] Error getting playlist ID: %s", channel.Name, err)
+		if !errors.Is(err, context.Canceled) {
+			log.Printf("[%s] Error getting playlist ID: %s", channel.Name, err)
+		}
 		return
 	}
 
 	// Fetch the channel's videos from YouTube
 	youtubeIds, err := api.GetPlaylistItems(ytService, playlistId)
 	if err != nil {
-		log.Printf("[%s] Error fetching videos: %s", channel.Name, err)
+		if !errors.Is(err, context.Canceled) {
+			log.Printf("[%s] Error fetching videos: %s", channel.Name, err)
+		}
 		return
 	}
 
 	// Fetch the channel's videos from the archive
 	archivedIds, err := api.GetArchivedItems(ctx, client, cfg.Archive.ArchiveURL, channel.Id)
 	if err != nil {
-		log.Printf("[%s] Error fetching archived videos: %s", channel.Name, err)
+		if !errors.Is(err, context.Canceled) {
+			log.Printf("[%s] Error fetching archived videos: %s", channel.Name, err)
+		}
 		return
 	}
 
@@ -69,7 +76,7 @@ func doChannel(
 	sem := semaphore.NewWeighted(cfg.App.MaxConcurrency)
 	for _, id := range idsToArchive {
 		if err := sem.Acquire(ctx, 1); err != nil {
-			if err != context.Canceled {
+			if !errors.Is(err, context.Canceled) {
 				log.Printf("[%s] Error acquiring semaphore: %s", channel.Name, err)
 			}
 			break
@@ -81,7 +88,7 @@ func doChannel(
 			req, err := http.NewRequestWithContext(
 				ctx, http.MethodPut, cfg.Archive.QueueURL, strings.NewReader(id))
 			if err != nil {
-				if err != context.Canceled {
+				if !errors.Is(err, context.Canceled) {
 					log.Printf("[%s:%s] Error creating request: %s", channel.Name, id, err)
 				}
 				return
@@ -89,7 +96,7 @@ func doChannel(
 
 			resp, err := client.Do(req)
 			if err != nil {
-				if err != context.Canceled {
+				if !errors.Is(err, context.Canceled) {
 					log.Printf("[%s:%s] Error sending request: %s", channel.Name, id, err)
 				}
 				return
@@ -97,7 +104,7 @@ func doChannel(
 			defer resp.Body.Close()
 
 			if resp.StatusCode != http.StatusOK {
-				if err != context.Canceled {
+				if !errors.Is(err, context.Canceled) {
 					log.Printf("[%s:%s] Error sending request: %s", channel.Name, id, resp.Status)
 				}
 				return
@@ -129,7 +136,7 @@ func runCronJob(cfg *config.Config, ctx context.Context, presetName string) {
 	sem := semaphore.NewWeighted(cfg.App.MaxConcurrency)
 	for _, channel := range channels {
 		if err := sem.Acquire(ctx, 1); err != nil {
-			if err != context.Canceled {
+			if !errors.Is(err, context.Canceled) {
 				log.Printf("[%s] Error acquiring semaphore: %s", channel.Name, err)
 			}
 			break

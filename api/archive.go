@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -44,7 +45,7 @@ func GetArchivedItems(ctx context.Context, client *http.Client, baseUrl string, 
 
 	resp, err := client.Do(req)
 	if err != nil {
-		if err == context.Canceled {
+		if errors.Is(err, context.Canceled) {
 			return nil, err
 		}
 		return nil, fmt.Errorf("failed to fetch channel videos: %w", err)
