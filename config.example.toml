@@ -1,0 +1,23 @@
+[app]
+max_concurrency = 8
+
+[youtube]
+# Get the API key from https://console.cloud.google.com/apis/credentials
+# scoped to YouTube Data API v3
+api_key = '***************************************'
+
+[archive]
+# URL to a TSV file containing the list of channels to monitor (see api/list.go
+# for the format)
+channels_list_url = 'https://example.com/list.tsv'
+# URL to the archive website, used to check if a video is already archived
+archive_url = 'https://archive.ragtag.moe'
+# URL to a a tasq instance (https://github.com/ragtag-archive/tasq)
+queue_url = 'http://127.0.0.1:8080/test-list'
+
+[cron_presets]
+normal     = "0 */2 * * *"
+graduating = "0 */2 * * *"
+patreon    = "0 */2 * * *"
+low        = "0 0 * * *"
+nijisanji  = "0 0 * * *"

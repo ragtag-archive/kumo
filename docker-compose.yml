@@ -1,0 +1,7 @@
+version: '3'
+services:
+  kumo:
+    build: .
+    restart: unless-stopped
+    volumes:
+    - ./config.example.toml:/app/config.toml:ro
