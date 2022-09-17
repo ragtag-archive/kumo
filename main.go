@@ -188,13 +188,24 @@ func main() {
 	log.Println("Starting cron jobs")
 	c.Start()
 
+	log.Println("Preloading channels list")
+	channels, err := api.GetChannels(ctx, &http.Client{}, cfg.Archive.ChannelsListURL)
+	if err != nil {
+		panic(fmt.Errorf("Error preloading channels list: %s", err))
+	}
+	log.Printf("Found %d channels", len(channels))
+
 	// Wait for a signal to stop
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, os.Interrupt, syscall.SIGTERM)
+
+	log.Println("Ready")
 	<-ch
 
 	log.Println("Interrupted, shutting down")
 	cancel()
 	c.Stop()
 	wg.Wait()
+
+	log.Println("Bye")
 }

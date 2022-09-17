@@ -5,6 +5,7 @@ import (
 	"context"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -20,9 +21,13 @@ type Channel struct {
 // Channel cache
 var cache []Channel
 var cacheLastModified time.Time
+var cacheLock sync.Mutex
 
 // GetChannels returns a list of channels to process
 func GetChannels(ctx context.Context, client *http.Client, youtubeChannelsListURL string) ([]Channel, error) {
+	cacheLock.Lock()
+	defer cacheLock.Unlock()
+
 	// Check if the cache is still valid
 	if cacheLastModified.After(time.Now().Add(-5 * time.Minute)) {
 		return cache, nil
